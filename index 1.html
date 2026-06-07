@@ -1,0 +1,171 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gym Tracker Pro</title>
+<style>
+body{margin:0;font-family:-apple-system;background:#0f172a;color:white}
+header{background:#111827;padding:18px;text-align:center;font-size:28px;font-weight:bold;position:sticky;top:0}
+.container{padding:15px}
+.card{background:#1e293b;border-radius:18px;padding:15px;margin-bottom:18px}
+.day-title{font-size:22px;font-weight:bold;margin-bottom:10px}
+.exercise{background:#334155;padding:12px;border-radius:14px;margin-bottom:10px}
+input,textarea{width:100%;padding:10px;margin-top:8px;border:none;border-radius:10px;box-sizing:border-box}
+button{border:none;padding:12px;border-radius:12px;font-size:16px;font-weight:bold;margin-top:10px}
+.primary{background:#3b82f6;color:white;width:100%}
+.green{background:#22c55e;color:white}
+.red{background:#ef4444;color:white}
+.topbar{display:flex;gap:10px;padding:15px;position:sticky;top:72px;background:#0f172a}
+.topbar button{flex:1}
+.stats{display:flex;justify-content:space-around;padding:10px;background:#111827}
+.stat{text-align:center}
+.stat span{display:block;font-size:22px;font-weight:bold}
+</style>
+</head>
+<body>
+
+<header>🏋️ Gym Tracker Pro</header>
+
+<div class="stats">
+<div class="stat">✔<span id="done">0</span></div>
+<div class="stat">🔥<span id="percent">0%</span></div>
+<div class="stat">📈<span id="total">0</span></div>
+</div>
+
+<div class="topbar">
+<button class="green" onclick="addDay()">+ Día</button>
+<button class="red" onclick="resetData()">🗑 Reset</button>
+</div>
+
+<div class="container" id="app"></div>
+
+<script>
+
+let rutina = JSON.parse(localStorage.getItem('rutina')) || {
+"Lunes":["Prensa inclinada","Sentadilla hack","Extensión cuádriceps","Split squat","Aductores","Pantorrilla"],
+"Martes":["Press inclinado","Press plano","Aperturas","Elevaciones laterales","Face pulls","Encogimientos","Tríceps polea","Fondos asistidos"],
+"Miércoles":["Curl femoral","Peso muerto rumano","Hip thrust","Patada glúteo","Abductores"],
+"Jueves":["Jalón neutro","Remo pecho apoyado","Remo unilateral","Pullover","Curl EZ","Curl martillo","Antebrazos"],
+"Viernes":["Step-up","Prensa ligera","Extensión ligera","Curl femoral sentado","Pantorrilla","Glúteo medio"],
+"Sábado":["Press inclinado","Jalón neutro","Remo máquina","Elevaciones laterales","Curl bíceps","Tríceps polea","Trapecio"]
+};
+
+function saveRoutine(){
+localStorage.setItem('rutina',JSON.stringify(rutina));
+}
+
+function render(){
+
+const app=document.getElementById('app');
+app.innerHTML='';
+
+let total=0;
+let done=0;
+
+Object.entries(rutina).forEach(([dia,ejercicios])=>{
+
+const card=document.createElement('div');
+card.className='card';
+
+let html=`<div class='day-title'>${dia}</div>`;
+
+ejercicios.forEach((ej,i)=>{
+
+total++;
+
+const id=dia+'-'+i;
+const data=JSON.parse(localStorage.getItem(id)||'{}');
+
+if(data.done) done++;
+
+html+=`
+<div class='exercise'>
+
+<label>Ejercicio / Máquina</label>
+<input value="${ej}" onchange="changeExercise('${dia}',${i},this.value)">
+
+<label>Peso</label>
+<input type='number' value='${data.peso||""}' onchange="saveField('${id}','peso',this.value)">
+
+<label>Reps</label>
+<input type='number' value='${data.reps||""}' onchange="saveField('${id}','reps',this.value)">
+
+<label>Series</label>
+<input type='number' value='${data.series||""}' onchange="saveField('${id}','series',this.value)">
+
+<label>Notas</label>
+<textarea onchange="saveField('${id}','note',this.value)">${data.note||""}</textarea>
+
+<label>
+<input type='checkbox' ${data.done ? "checked" : ""} onchange="saveField('${id}','done',this.checked);render();">
+ Completado
+</label>
+
+<button class='red' onclick="deleteExercise('${dia}',${i})">Eliminar ejercicio</button>
+
+</div>
+`;
+
+});
+
+html += `<button class='primary' onclick="addExercise('${dia}')">+ Agregar ejercicio</button>`;
+
+card.innerHTML=html;
+app.appendChild(card);
+
+});
+
+document.getElementById('done').innerText=done;
+document.getElementById('total').innerText=total;
+document.getElementById('percent').innerText=Math.round((done/Math.max(total,1))*100)+'%';
+
+}
+
+function saveField(id,key,value){
+let data=JSON.parse(localStorage.getItem(id)||'{}');
+data[key]=value;
+localStorage.setItem(id,JSON.stringify(data));
+}
+
+function addExercise(day){
+const name=prompt('Nombre del ejercicio');
+if(!name) return;
+rutina[day].push(name);
+saveRoutine();
+render();
+}
+
+function deleteExercise(day,index){
+rutina[day].splice(index,1);
+saveRoutine();
+render();
+}
+
+function changeExercise(day,index,value){
+rutina[day][index]=value;
+saveRoutine();
+}
+
+function addDay(){
+const day=prompt('Nombre del día');
+if(!day) return;
+rutina[day]=[];
+saveRoutine();
+render();
+}
+
+function resetData(){
+if(confirm('¿Eliminar todos los datos?')){
+localStorage.clear();
+location.reload();
+}
+}
+
+render();
+
+</script>
+
+</body>
+</html>
