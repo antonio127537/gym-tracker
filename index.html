@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#111827">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Gym Tracker Pro</title>
+
+<style>
+body{
+margin:0;
+font-family:-apple-system,BlinkMacSystemFont,sans-serif;
+background:#0f172a;
+color:white;
+padding-bottom:120px;
+}
+header{
+position:sticky;
+top:0;
+background:#111827;
+padding:18px;
+font-size:28px;
+font-weight:bold;
+text-align:center;
+z-index:10;
+box-shadow:0 2px 10px rgba(0,0,0,.4);
+}
+.stats{
+display:flex;
+justify-content:space-around;
+padding:12px;
+background:#1e293b;
+position:sticky;
+top:72px;
+z-index:9;
+}
+.stat{
+text-align:center;
+}
+.stat span{
+display:block;
+font-size:22px;
+font-weight:bold;
+}
+.container{
+padding:15px;
+}
+.day{
+background:#1e293b;
+border-radius:20px;
+margin-bottom:18px;
+overflow:hidden;
+}
+.day h2{
+margin:0;
+padding:15px;
+background:#2563eb;
+font-size:22px;
+}
+.exercise{
+padding:15px;
+border-bottom:1px solid rgba(255,255,255,.08);
+}
+.exercise:last-child{
+border:none;
+}
+.exercise-title{
+display:flex;
+justify-content:space-between;
+align-items:center;
+font-size:18px;
+font-weight:bold;
+}
+.check{
+width:28px;
+height:28px;
+accent-color:#22c55e;
+}
+.grid{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:10px;
+margin-top:12px;
+}
+.card{
+background:#334155;
+padding:10px;
+border-radius:14px;
+}
+.card label{
+font-size:12px;
+opacity:.8;
+}
+.card input{
+width:100%;
+padding:10px;
+margin-top:5px;
+border:none;
+border-radius:10px;
+font-size:16px;
+box-sizing:border-box;
+}
+textarea{
+width:100%;
+margin-top:12px;
+padding:12px;
+border:none;
+border-radius:12px;
+min-height:60px;
+box-sizing:border-box;
+font-size:15px;
+}
+.timer{
+display:flex;
+align-items:center;
+justify-content:space-between;
+margin-top:12px;
+gap:10px;
+}
+.timer-display{
+font-size:28px;
+font-weight:bold;
+}
+button{
+border:none;
+border-radius:14px;
+padding:12px;
+font-size:16px;
+font-weight:bold;
+}
+.start{
+background:#22c55e;
+color:white;
+flex:1;
+}
+.reset{
+background:#ef4444;
+color:white;
+flex:1;
+}
+.save{
+width:100%;
+margin-top:12px;
+background:#3b82f6;
+color:white;
+}
+.history{
+background:#111827;
+padding:15px;
+border-radius:18px;
+margin-top:20px;
+}
+.history h3{
+margin-top:0;
+}
+.history-item{
+padding:8px 0;
+border-bottom:1px solid rgba(255,255,255,.08);
+}
+</style>
+</head>
+<body>
+
+<header>🏋️ Gym Tracker Pro</header>
+
+<div class="stats">
+<div class="stat">✔<span id="doneCount">0</span></div>
+<div class="stat">🔥<span id="weekly">0%</span></div>
+<div class="stat">📅<span id="today"></span></div>
+</div>
+
+<div class="container" id="app"></div>
+
+<div class="container">
+<div class="history">
+<h3>📈 Historial reciente</h3>
+<div id="history"></div>
+</div>
+</div>
+
+<script>
+const rutina = {
+"Lunes":["Prensa inclinada","Sentadilla hack","Extensión cuádriceps","Split squat","Aductores","Pantorrilla"],
+"Martes":["Press inclinado","Press plano","Aperturas","Elevaciones laterales","Face pulls","Tríceps polea"],
+"Miércoles":["Curl femoral","Peso muerto rumano","Hip thrust","Glute bridge","Abductores"],
+"Jueves":["Jalón neutro","Remo pecho apoyado","Remo unilateral","Pullover","Curl EZ","Curl martillo"],
+"Viernes":["Step-up","Prensa ligera","Extensión ligera","Curl femoral sentado","Glúteo medio"],
+"Sábado":["Press inclinado","Jalón neutro","Remo máquina","Elevaciones laterales","Curl bíceps","Tríceps polea"]
+};
+
+document.getElementById("today").innerText = new Date().toLocaleDateString("es-ES",{weekday:"short"});
+
+const app = document.getElementById("app");
+let completed = 0;
+
+Object.entries(rutina).forEach(([dia, ejercicios],d)=>{
+
+const div = document.createElement("div");
+div.className="day";
+
+let html = `<h2>${dia}</h2>`;
+
+ejercicios.forEach((ej,i)=>{
+
+const id = d+"-"+i;
+
+html += `
+<div class="exercise">
+
+<div class="exercise-title">
+${ej}
+<input type="checkbox" class="check" id="check-${id}" onchange="toggleDone('${id}')">
+</div>
+
+<div class="grid">
+
+<div class="card">
+<label>Peso</label>
+<input type="number" id="peso-${id}">
+</div>
+
+<div class="card">
+<label>Reps</label>
+<input type="number" id="reps-${id}">
+</div>
+
+<div class="card">
+<label>Series</label>
+<input type="number" id="series-${id}">
+</div>
+
+<div class="card">
+<label>Descanso</label>
+<input type="number" id="rest-${id}" value="90">
+</div>
+
+</div>
+
+<textarea id="note-${id}" placeholder="Notas y progreso..."></textarea>
+
+<div class="timer">
+<button class="start" onclick="startTimer('${id}')">▶ Descanso</button>
+<button class="reset" onclick="resetTimer('${id}')">⟲ Reiniciar</button>
+<div class="timer-display" id="timer-${id}">00:00</div>
+</div>
+
+<button class="save" onclick="saveData('${id}','${ej}')">💾 Guardar</button>
+
+</div>
+`;
+});
+
+div.innerHTML = html;
+app.appendChild(div);
+
+});
+
+const timers = {};
+
+function startTimer(id){
+resetTimer(id);
+let sec = parseInt(document.getElementById("rest-"+id).value)||90;
+
+timers[id]=setInterval(()=>{
+
+let m = String(Math.floor(sec/60)).padStart(2,"0");
+let s = String(sec%60).padStart(2,"0");
+
+document.getElementById("timer-"+id).innerText = `${m}:${s}`;
+
+if(sec<=0){
+clearInterval(timers[id]);
+alert("⏱ Descanso terminado");
+}
+
+sec--;
+},1000);
+}
+
+function resetTimer(id){
+clearInterval(timers[id]);
+document.getElementById("timer-"+id).innerText="00:00";
+}
+
+function saveData(id,ej){
+
+const data={
+peso:document.getElementById("peso-"+id).value,
+reps:document.getElementById("reps-"+id).value,
+series:document.getElementById("series-"+id).value,
+rest:document.getElementById("rest-"+id).value,
+note:document.getElementById("note-"+id).value,
+done:document.getElementById("check-"+id).checked
+};
+
+localStorage.setItem(id,JSON.stringify(data));
+
+let hist = JSON.parse(localStorage.getItem("history")||"[]");
+hist.unshift(`${new Date().toLocaleDateString()} - ${ej}`);
+hist = hist.slice(0,10);
+localStorage.setItem("history",JSON.stringify(hist));
+
+renderHistory();
+
+alert("Guardado ✔");
+}
+
+function toggleDone(id){
+updateStats();
+}
+
+function updateStats(){
+const checks = document.querySelectorAll(".check");
+completed = 0;
+checks.forEach(c=>{
+if(c.checked) completed++;
+});
+document.getElementById("doneCount").innerText = completed;
+
+const total = checks.length;
+document.getElementById("weekly").innerText = Math.round((completed/total)*100)+"%";
+}
+
+function renderHistory(){
+const historyDiv = document.getElementById("history");
+let hist = JSON.parse(localStorage.getItem("history")||"[]");
+
+historyDiv.innerHTML = hist.map(h=>`<div class='history-item'>${h}</div>`).join("");
+}
+
+window.onload = ()=>{
+
+Object.keys(localStorage).forEach(key=>{
+
+try{
+
+const data = JSON.parse(localStorage.getItem(key));
+
+if(document.getElementById("peso-"+key)){
+document.getElementById("peso-"+key).value = data.peso||"";
+document.getElementById("reps-"+key).value = data.reps||"";
+document.getElementById("series-"+key).value = data.series||"";
+document.getElementById("rest-"+key).value = data.rest||90;
+document.getElementById("note-"+key).value = data.note||"";
+document.getElementById("check-"+key).checked = data.done||false;
+}
+
+}catch(e){}
+
+});
+
+updateStats();
+renderHistory();
+};
+
+if ('serviceWorker' in navigator) {
+navigator.serviceWorker.register('service-worker.js');
+}
+
+</script>
+
+</body>
+</html>
